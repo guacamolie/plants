@@ -6,4 +6,5 @@ export interface Plant {
   description: string;
   price: number;
   image: string;
+  sku?: string;
 }

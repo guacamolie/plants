@@ -10,6 +10,7 @@ export default function Home() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [plants, setPlants] = useState<any[]>([]);
+  const [qrModal, setQrModal] = useState<{ open: boolean; qr?: string; name?: string } | null>(null);
 
   async function fetchPlants() {
     const res = await fetch('/api/plants');
@@ -35,24 +36,61 @@ export default function Home() {
 
   return (
     <div className="max-w-4xl mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-8 gap-4 flex-wrap">
         <h1 className="text-3xl font-bold">Available Plants</h1>
-        <button onClick={handleSync} disabled={syncing} className="bg-blue-600 text-white px-4 py-2 rounded">
-          {syncing ? 'Syncing...' : 'Sync Square Catalog'}
-        </button>
+        <div className="flex gap-2">
+          <button onClick={handleSync} disabled={syncing} className="bg-blue-600 text-white px-4 py-2 rounded">
+            {syncing ? 'Syncing...' : 'Sync Square Catalog'}
+          </button>
+          <Link href="/vendors" className="bg-purple-600 text-white px-4 py-2 rounded">Vendors</Link>
+        </div>
       </div>
       {syncResult && <div className="mb-4 text-green-700">{syncResult}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
         {plants.map((plant) => (
           <div key={plant._id?.toString()} className="border rounded-lg p-4 flex flex-col items-center">
-            <Image src={plant.image} alt={plant.name} width={200} height={200} className="mb-4 rounded" />
+            <Image
+              src={plant.image && plant.image.trim() !== "" ? plant.image : "/default-plant.jpg"}
+              alt={plant.name}
+              width={200}
+              height={200}
+              className="mb-4 rounded"
+            />
             <h2 className="text-xl font-semibold mb-2">{plant.name}</h2>
             <p className="mb-2">{plant.description}</p>
             <span className="font-bold mb-2">${plant.price?.toFixed(2)}</span>
-            <Link href={`/plants/${plant._id}`} className="btn bg-green-600 text-white px-4 py-2 rounded">View</Link>
+            <div className="flex gap-2">
+              <Link href={`/plants/${plant._id}`} className="btn bg-green-600 text-white px-4 py-2 rounded">View</Link>
+              <button
+                className="btn bg-gray-700 text-white px-4 py-2 rounded"
+                onClick={async () => {
+                  const res = await fetch(`/api/plants/qr?id=${plant._id}&name=${encodeURIComponent(plant.name)}&price=${plant.price}${plant.sku ? `&sku=${encodeURIComponent(plant.sku)}` : ''}`);
+                  const data = await res.json();
+                  setQrModal({ open: true, qr: data.qr, name: plant.name });
+                }}
+              >
+                QR Label
+              </button>
+            </div>
           </div>
         ))}
       </div>
+      {/* QR Modal */}
+      {qrModal?.open && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded shadow-lg flex flex-col items-center">
+            <h3 className="text-lg font-bold mb-2">QR Code Label{qrModal.name ? ` for ${qrModal.name}` : ''}</h3>
+            <img src={qrModal.qr} alt="QR Code" className="mb-4" />
+            <button
+              className="bg-gray-700 text-white px-4 py-2 rounded"
+              onClick={() => setQrModal(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
