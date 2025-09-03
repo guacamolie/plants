@@ -12,11 +12,13 @@ export async function GET(req: NextRequest) {
   }
   // The QR code can encode a URL or price info. Here, encode a URL to the plant detail page.
   const url = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/plants/${plantId}`;
+    
   let label = name ? `${name} - $${price}` : undefined;
   if (sku) {
     label = label ? `${label} (SKU: ${sku})` : `SKU: ${sku}`;
   }
   const qrData = label ? `${url}\n${label}` : url;
   const qr = await QRCode.toDataURL(qrData, { width: 300 });
+  console.log('qr code:', qr);
   return NextResponse.json({ qr });
 }

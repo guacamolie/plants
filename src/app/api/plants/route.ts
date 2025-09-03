@@ -29,5 +29,18 @@ export async function GET(req: NextRequest) {
   }
   const db = (await clientPromise).db();
   const plants = await db.collection('plants').find({}).toArray();
-  return withCORS(NextResponse.json(plants));
+  console.log('PLANTS:', plants); 
+  // Recursively convert all BigInt values to strings for JSON serialization
+  function convertBigInt(obj: any): any {
+    if (typeof obj === 'bigint') return obj.toString();
+    if (Array.isArray(obj)) return obj.map(convertBigInt);
+    if (obj && typeof obj === 'object') {
+      return Object.fromEntries(
+        Object.entries(obj).map(([k, v]) => [k, convertBigInt(v)])
+      );
+    }
+    return obj;
+  }
+  const safePlants = plants.map(convertBigInt);
+  return withCORS(NextResponse.json(safePlants));
 }
