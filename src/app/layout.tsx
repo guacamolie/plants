@@ -1,8 +1,11 @@
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+
 import Navbar from "./components/Navbar";
 import "./globals.css";
+import ClientLayout from "./client-layout";
+// Remove SessionProvider from server layout
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,8 +32,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navbar />
-        <main>{children}</main>
+        <ClientLayout>
+          <Navbar />
+          <main>{children}</main>
+        </ClientLayout>
       </body>
     </html>
   );

@@ -17,16 +17,7 @@ export async function OPTIONS() {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get('authorization');
-  if (!auth || !auth.startsWith('Bearer ')) {
-    return withCORS(NextResponse.json({ error: 'Missing or invalid authorization header' }, { status: 401 }));
-  }
-  const token = auth.substring(7);
-  try {
-    jwt.verify(token, JWT_SECRET);
-  } catch (e) {
-    return withCORS(NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 }));
-  }
+  // Public endpoint: anyone can view plant inventory
   const db = (await clientPromise).db();
   const plants = await db.collection('plants').find({}).toArray();
   console.log('PLANTS:', plants); 
