@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  nextjs:
+    container_name: plants-nextjs
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      ENABLE_INTERNAL_PROXY: ${ENABLE_INTERNAL_PROXY:-true}
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "if [ \"$NODE_ENV\" = production ]; then npm run build && npm run start; else npm run dev; fi"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.plants.rule=Host(`${APP_PRIMARY_HOST}`)"
+      - "traefik.http.routers.plants.entrypoints=websecure"
+      - "traefik.http.routers.plants.tls=true"
+      - "traefik.http.routers.plants.middlewares=secure-headers@file"
+      - "traefik.http.routers.plants-extra.rule=Host(`${APP_EXTRA_HOSTS}`)"
+      - "traefik.http.routers.plants-extra.entrypoints=websecure"
+      - "traefik.http.routers.plants-extra.tls=true"
+      - "traefik.http.routers.plants-extra.middlewares=secure-headers@file"
+    networks:
+      - internal
+    volumes:
+      - .:/app
+    working_dir: /app
+
+  reverse-proxy:
+    image: traefik:v3.1
+    container_name: traefik
+    profiles: ["proxy"]
+    depends_on:
+      - nextjs
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.file.filename=/etc/traefik/dynamic/traefik_dynamic.yml"
+      - "--api.dashboard=true"
+      - "--api.insecure=true" # Remove / secure before public exposure
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./reverse-proxy/traefik_dynamic.yml:/etc/traefik/dynamic/traefik_dynamic.yml:ro
+      - ./certs:/certs:ro
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge

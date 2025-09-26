@@ -1,0 +1,27 @@
+tls:
+  certificates:
+    - certFile: /certs/localhost-cert.pem
+      keyFile: /certs/localhost-key.pem
+
+http:
+  middlewares:
+    secure-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: no-referrer-when-downgrade
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
+
+  routers:
+    traefik-dashboard:
+      rule: Host(`traefik.${APP_PRIMARY_HOST}`)
+      service: api@internal
+      entryPoints:
+        - websecure
+      tls: {}
+      middlewares:
+        - secure-headers
